@@ -8,8 +8,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Diet Coach',
-        short_name: 'Diet Coach',
+        name: 'Yaseyouyo',
+        short_name: 'Yaseyouyo',
         description: 'A strict, accessible TDEE and weight-goal tracker',
         lang: 'en',
         start_url: './',

@@ -1,4 +1,4 @@
-# Diet Coach
+# Yaseyouyo
 
 An accessible, installable PWA for tracking weight, TDEE, and a deficit-based
 weight goal — free, no server, no account, no AI, data stored only on your

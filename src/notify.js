@@ -31,7 +31,7 @@ export function maybeNudge({ dateISO, hasLoggedToday }) {
   if (sessionStorage.getItem(SESSION_FLAG) === dateISO) return;
 
   sessionStorage.setItem(SESSION_FLAG, dateISO);
-  new Notification('Diet Coach', {
+  new Notification('Yaseyouyo', {
     body: "You haven't logged any food today. Log it now to stay on track.",
   });
 }
