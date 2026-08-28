@@ -65,9 +65,12 @@ export async function saveGoal(fields) {
 
 // --- Weight log ---
 
-export async function addWeightEntry(weightKg, dateISO = todayISO()) {
+// bodyFatPct and muscleMassKg are optional — most entries will just be a
+// weight, with fat%/muscle logged whenever a body-comp scale reading is
+// available.
+export async function addWeightEntry(weightKg, dateISO = todayISO(), { bodyFatPct, muscleMassKg } = {}) {
   const db = await initDB();
-  const entry = { id: uid(), dateISO, weightKg, createdAt: Date.now() };
+  const entry = { id: uid(), dateISO, weightKg, bodyFatPct, muscleMassKg, createdAt: Date.now() };
   await db.put('weightLog', entry);
   return entry;
 }

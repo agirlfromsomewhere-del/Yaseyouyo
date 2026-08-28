@@ -5,6 +5,7 @@ const TABS = [
   { hash: 'weight', label: 'Weight' },
   { hash: 'food', label: 'Food' },
   { hash: 'suggestions', label: 'Ideas' },
+  { hash: 'exercise', label: 'Exercise' },
   { hash: 'goal', label: 'Goal' },
   { hash: 'settings', label: 'Settings' },
 ];
