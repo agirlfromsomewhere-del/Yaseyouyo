@@ -1,22 +1,28 @@
 import { openDB } from 'idb';
 
 const DB_NAME = 'diet-coach';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let dbPromise;
 
 export function initDB() {
   if (!dbPromise) {
     dbPromise = openDB(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        db.createObjectStore('profile', { keyPath: 'id' });
-        db.createObjectStore('goal', { keyPath: 'id' });
+      upgrade(db, oldVersion) {
+        if (oldVersion < 1) {
+          db.createObjectStore('profile', { keyPath: 'id' });
+          db.createObjectStore('goal', { keyPath: 'id' });
 
-        const weightLog = db.createObjectStore('weightLog', { keyPath: 'id' });
-        weightLog.createIndex('byDate', 'dateISO');
+          const weightLog = db.createObjectStore('weightLog', { keyPath: 'id' });
+          weightLog.createIndex('byDate', 'dateISO');
 
-        const foodLog = db.createObjectStore('foodLog', { keyPath: 'id' });
-        foodLog.createIndex('byDate', 'dateISO');
+          const foodLog = db.createObjectStore('foodLog', { keyPath: 'id' });
+          foodLog.createIndex('byDate', 'dateISO');
+        }
+        if (oldVersion < 2) {
+          const supportLog = db.createObjectStore('supportLog', { keyPath: 'id' });
+          supportLog.createIndex('byDate', 'dateISO');
+        }
       },
     });
   }
@@ -120,4 +126,26 @@ export async function deleteFoodEntry(id) {
 export async function totalKcalForDate(dateISO = todayISO()) {
   const entries = await getFoodLogForDate(dateISO);
   return entries.reduce((sum, e) => sum + e.kcal, 0);
+}
+
+// --- Support check-ins (the "having a moment" flow) ---
+
+export async function addSupportCheckIn({ feeling, tookAction }) {
+  const db = await initDB();
+  const entry = { id: uid(), dateISO: todayISO(), feeling, tookAction, createdAt: Date.now() };
+  await db.put('supportLog', entry);
+  return entry;
+}
+
+export async function getSupportLog() {
+  const db = await initDB();
+  const all = await db.getAll('supportLog');
+  return all.sort((a, b) => a.createdAt - b.createdAt);
+}
+
+export async function getSupportCheckInsThisWeek() {
+  const all = await getSupportLog();
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 7);
+  return all.filter((e) => new Date(e.createdAt) >= cutoff);
 }

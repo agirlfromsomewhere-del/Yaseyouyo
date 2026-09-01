@@ -25,6 +25,10 @@ export async function renderDashboard(app) {
   h.textContent = 'Today';
   container.appendChild(h);
 
+  const supportBtn = navButton('support', 'Feeling like overeating?', 'button-primary');
+  supportBtn.style.marginBottom = '0.5rem';
+  container.appendChild(supportBtn);
+
   if (!goal?.goalWeightKg) {
     const banner = document.createElement('div');
     banner.className = 'banner banner-warning';

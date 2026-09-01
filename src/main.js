@@ -6,6 +6,7 @@ import { renderFoodSuggestions } from './views/foodSuggestions.js';
 import { renderGoal } from './views/goal.js';
 import { renderSettings } from './views/settings.js';
 import { renderExerciseList, renderExerciseDetail } from './views/exercises.js';
+import { renderSupport } from './views/support.js';
 import { initAnnouncer } from './a11y.js';
 
 const app = document.getElementById('app');
@@ -28,6 +29,8 @@ async function router() {
     await renderGoal(app);
   } else if (parts[0] === 'settings') {
     await renderSettings(app);
+  } else if (parts[0] === 'support') {
+    await renderSupport(app);
   } else {
     await renderDashboard(app);
   }
