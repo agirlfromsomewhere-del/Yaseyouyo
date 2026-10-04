@@ -1,47 +1,46 @@
 import { openDB } from 'idb';
 
 const DB_NAME = 'diet-coach';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 
-// Lunch foods are cooked with about 2 tbsp of oil per plate (about 240 kcal,
-// 1 tbsp = ~120 kcal). Spread over a typical ~250 g plate (rice plus kufta or
-// fish) that adds about 96 kcal per 100 g, which is included in the values
-// below. Base values: cooked white rice 130, kufta guess 250, cooked king
-// mackerel (kanad) 134 per 100 g (USDA).
-const OIL_KCAL_PER_100G = 96;
+// Lunch foods, with no allowance for cooking oil: someone else cooks them,
+// so the oil can't be known. Values are per 100 g as eaten: cooked white
+// rice 130, kufta a rough guess for the meat, cooked king mackerel (kanad)
+// 134 (USDA).
 const LUNCH_FOODS = [
   {
-    name: 'White rice, cooked with oil',
+    name: 'White rice, cooked',
     basis: 'per100g',
-    kcal: 130 + OIL_KCAL_PER_100G,
+    kcal: 130,
     defaultGrams: 130,
     estimate: false,
-    note: 'Cooked white rice (130) plus about 2 tbsp oil spread over a ~250 g plate.',
+    note: 'Typical value for cooked white rice.',
   },
   {
-    name: 'Homemade kufta, cooked with oil',
+    name: 'Homemade kufta',
     basis: 'per100g',
-    kcal: 250 + OIL_KCAL_PER_100G,
+    kcal: 250,
     defaultGrams: 120,
     estimate: true,
-    note: 'Rough guess for the meat (250) plus oil; depends on your recipe.',
+    note: 'Rough guess; depends on the meat and fat in the recipe.',
   },
   {
-    name: 'Kanad fish (king mackerel), cooked with oil',
+    name: 'Kanad fish (king mackerel), cooked',
     basis: 'per100g',
-    kcal: 134 + OIL_KCAL_PER_100G,
+    kcal: 134,
     defaultGrams: 100,
     estimate: false,
-    note: 'Cooked king mackerel (134, USDA) plus oil; weigh the fish as eaten.',
+    note: 'Cooked king mackerel, from USDA data.',
   },
 ];
 
-// What version 3 preloaded, so version 4 can update foods the user has not
-// changed (matched by name and calories) without touching edited ones.
-const V3_LUNCH_SEEDS = [
-  { name: 'White rice, cooked', kcal: 130 },
-  { name: 'Homemade kufta', kcal: 250 },
-  { name: 'Canned fish', kcal: 150 },
+// Names and calories that earlier versions preloaded for each lunch food, so
+// an upgrade can replace them while leaving anything the user edited alone
+// (matched by name and calories).
+const OLD_LUNCH_SEEDS = [
+  [{ name: 'White rice, cooked', kcal: 130 }, { name: 'White rice, cooked with oil', kcal: 226 }],
+  [{ name: 'Homemade kufta', kcal: 250 }, { name: 'Homemade kufta, cooked with oil', kcal: 346 }],
+  [{ name: 'Canned fish', kcal: 150 }, { name: 'Kanad fish (king mackerel), cooked with oil', kcal: 230 }],
 ];
 
 // The user's usual foods, preloaded the first time the customFoods store is
@@ -95,11 +94,11 @@ export function initDB() {
             customFoods.put({ ...food, id: crypto.randomUUID(), createdAt: Date.now() + i });
           });
         }
-        if (oldVersion >= 3 && oldVersion < 4) {
+        if (oldVersion >= 3 && oldVersion < 5) {
           const store = transaction.objectStore('customFoods');
           const existing = await store.getAll();
-          for (const [i, old] of V3_LUNCH_SEEDS.entries()) {
-            const match = existing.find((f) => f.name === old.name && f.kcal === old.kcal);
+          for (const [i, olds] of OLD_LUNCH_SEEDS.entries()) {
+            const match = existing.find((f) => olds.some((o) => f.name === o.name && f.kcal === o.kcal));
             if (match) await store.put({ ...match, ...LUNCH_FOODS[i] });
           }
         }
