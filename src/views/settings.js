@@ -83,7 +83,7 @@ export async function renderSettings(app) {
     }
     const db = await initDB();
     await Promise.all(
-      ['profile', 'goal', 'weightLog', 'foodLog', 'supportLog'].map((store) => db.clear(store))
+      ['profile', 'goal', 'weightLog', 'foodLog', 'supportLog', 'customFoods'].map((store) => db.clear(store))
     );
     announce('All data cleared.');
     renderDashboard(app);

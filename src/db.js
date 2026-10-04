@@ -1,7 +1,55 @@
 import { openDB } from 'idb';
 
 const DB_NAME = 'diet-coach';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
+
+// The user's usual foods, preloaded the first time the customFoods store is
+// created. basis 'serving': kcal is per one serving. basis 'per100g': kcal
+// is per 100 g and the user enters grams eaten. estimate:true marks values
+// that are rough guesses, shown in the UI so they get edited to match the
+// real recipe/label.
+const SEED_FOODS = [
+  {
+    name: 'MyProtein chocolate pancake mix',
+    basis: 'serving',
+    kcal: 184,
+    servingDesc: '1 serving (50 g dry mix)',
+    estimate: false,
+    note: 'From published nutrition data; check the label on your tub.',
+  },
+  {
+    name: 'Milk tea with sugar',
+    basis: 'serving',
+    kcal: 90,
+    servingDesc: '240 ml',
+    estimate: true,
+    note: 'Rough guess; depends on how much milk and sugar you use.',
+  },
+  {
+    name: 'White rice, cooked',
+    basis: 'per100g',
+    kcal: 130,
+    defaultGrams: 130,
+    estimate: false,
+    note: 'Typical value for cooked white rice.',
+  },
+  {
+    name: 'Homemade kufta',
+    basis: 'per100g',
+    kcal: 250,
+    defaultGrams: 120,
+    estimate: true,
+    note: 'Rough guess; depends on the meat and fat in your recipe.',
+  },
+  {
+    name: 'Canned fish',
+    basis: 'per100g',
+    kcal: 150,
+    defaultGrams: 100,
+    estimate: true,
+    note: 'Rough guess; tuna in water is about 116, in oil or sardines nearer 200.',
+  },
+];
 
 let dbPromise;
 
@@ -22,6 +70,12 @@ export function initDB() {
         if (oldVersion < 2) {
           const supportLog = db.createObjectStore('supportLog', { keyPath: 'id' });
           supportLog.createIndex('byDate', 'dateISO');
+        }
+        if (oldVersion < 3) {
+          const customFoods = db.createObjectStore('customFoods', { keyPath: 'id' });
+          SEED_FOODS.forEach((food, i) => {
+            customFoods.put({ ...food, id: crypto.randomUUID(), createdAt: Date.now() + i });
+          });
         }
       },
     });
@@ -126,6 +180,28 @@ export async function deleteFoodEntry(id) {
 export async function totalKcalForDate(dateISO = todayISO()) {
   const entries = await getFoodLogForDate(dateISO);
   return entries.reduce((sum, e) => sum + e.kcal, 0);
+}
+
+// --- Custom (saved) foods ---
+
+export async function getCustomFoods() {
+  const db = await initDB();
+  const all = await db.getAll('customFoods');
+  return all.sort((a, b) => a.createdAt - b.createdAt);
+}
+
+export async function saveCustomFood(fields) {
+  const db = await initDB();
+  const { id, ...rest } = fields;
+  const existing = id ? await db.get('customFoods', id) : null;
+  const food = { ...(existing || { id: uid(), createdAt: Date.now() }), ...rest };
+  await db.put('customFoods', food);
+  return food;
+}
+
+export async function deleteCustomFood(id) {
+  const db = await initDB();
+  await db.delete('customFoods', id);
 }
 
 // --- Support check-ins (the "having a moment" flow) ---

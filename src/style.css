@@ -37,6 +37,10 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 html {
   font-size: 100%;
 }
@@ -117,6 +121,21 @@ textarea {
 
 .field {
   margin-bottom: 0.5rem;
+}
+
+.inline-input {
+  width: 5.5rem;
+}
+
+.inline-checkbox {
+  width: 1.5rem;
+  min-height: 1.5rem;
+  vertical-align: middle;
+}
+
+.inline-label {
+  display: inline;
+  margin: 0 0 0 0.5rem;
 }
 
 .field-hint {
