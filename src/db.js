@@ -1,7 +1,48 @@
 import { openDB } from 'idb';
 
 const DB_NAME = 'diet-coach';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
+
+// Lunch foods are cooked with about 2 tbsp of oil per plate (about 240 kcal,
+// 1 tbsp = ~120 kcal). Spread over a typical ~250 g plate (rice plus kufta or
+// fish) that adds about 96 kcal per 100 g, which is included in the values
+// below. Base values: cooked white rice 130, kufta guess 250, cooked king
+// mackerel (kanad) 134 per 100 g (USDA).
+const OIL_KCAL_PER_100G = 96;
+const LUNCH_FOODS = [
+  {
+    name: 'White rice, cooked with oil',
+    basis: 'per100g',
+    kcal: 130 + OIL_KCAL_PER_100G,
+    defaultGrams: 130,
+    estimate: false,
+    note: 'Cooked white rice (130) plus about 2 tbsp oil spread over a ~250 g plate.',
+  },
+  {
+    name: 'Homemade kufta, cooked with oil',
+    basis: 'per100g',
+    kcal: 250 + OIL_KCAL_PER_100G,
+    defaultGrams: 120,
+    estimate: true,
+    note: 'Rough guess for the meat (250) plus oil; depends on your recipe.',
+  },
+  {
+    name: 'Kanad fish (king mackerel), cooked with oil',
+    basis: 'per100g',
+    kcal: 134 + OIL_KCAL_PER_100G,
+    defaultGrams: 100,
+    estimate: false,
+    note: 'Cooked king mackerel (134, USDA) plus oil; weigh the fish as eaten.',
+  },
+];
+
+// What version 3 preloaded, so version 4 can update foods the user has not
+// changed (matched by name and calories) without touching edited ones.
+const V3_LUNCH_SEEDS = [
+  { name: 'White rice, cooked', kcal: 130 },
+  { name: 'Homemade kufta', kcal: 250 },
+  { name: 'Canned fish', kcal: 150 },
+];
 
 // The user's usual foods, preloaded the first time the customFoods store is
 // created. basis 'serving': kcal is per one serving. basis 'per100g': kcal
@@ -25,30 +66,7 @@ const SEED_FOODS = [
     estimate: true,
     note: 'Rough guess; depends on how much milk and sugar you use.',
   },
-  {
-    name: 'White rice, cooked',
-    basis: 'per100g',
-    kcal: 130,
-    defaultGrams: 130,
-    estimate: false,
-    note: 'Typical value for cooked white rice.',
-  },
-  {
-    name: 'Homemade kufta',
-    basis: 'per100g',
-    kcal: 250,
-    defaultGrams: 120,
-    estimate: true,
-    note: 'Rough guess; depends on the meat and fat in your recipe.',
-  },
-  {
-    name: 'Canned fish',
-    basis: 'per100g',
-    kcal: 150,
-    defaultGrams: 100,
-    estimate: true,
-    note: 'Rough guess; tuna in water is about 116, in oil or sardines nearer 200.',
-  },
+  ...LUNCH_FOODS,
 ];
 
 let dbPromise;
@@ -56,7 +74,7 @@ let dbPromise;
 export function initDB() {
   if (!dbPromise) {
     dbPromise = openDB(DB_NAME, DB_VERSION, {
-      upgrade(db, oldVersion) {
+      async upgrade(db, oldVersion, newVersion, transaction) {
         if (oldVersion < 1) {
           db.createObjectStore('profile', { keyPath: 'id' });
           db.createObjectStore('goal', { keyPath: 'id' });
@@ -76,6 +94,14 @@ export function initDB() {
           SEED_FOODS.forEach((food, i) => {
             customFoods.put({ ...food, id: crypto.randomUUID(), createdAt: Date.now() + i });
           });
+        }
+        if (oldVersion >= 3 && oldVersion < 4) {
+          const store = transaction.objectStore('customFoods');
+          const existing = await store.getAll();
+          for (const [i, old] of V3_LUNCH_SEEDS.entries()) {
+            const match = existing.find((f) => f.name === old.name && f.kcal === old.kcal);
+            if (match) await store.put({ ...match, ...LUNCH_FOODS[i] });
+          }
         }
       },
     });
